@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.17.3
+# v0.19.27
 
 using Markdown
 using InteractiveUtils
@@ -15,23 +15,27 @@ end
 md""" ### Optimal advertising """
 
 # ╔═╡ 73d83ffa-95b6-43d9-bffa-aab4845f26e4
-md""" Problem requirements: 
+md""" In this problem we want to maximize the profits received from ``m`` internet advertising campaigns. The problem requirements are as follows:
 - We have ``m`` adverts and ``n`` timeslots. The total traffic in time slot ``t`` is ``T_{t}``. 
 - The number of ad ``i`` displayed in period ``t`` is ``D_{it}≥0``. 
 - We require ``\sum_{i=1}^{m}D_{it}≤T_{t}`` since we cannot show more than ``T_{t}`` ads during time slot ``t``. 
 - We require ``\sum_{t=1}^{n}D_{it}≥c_{i}`` to fulfill a contract to show advertisement ``i`` at least ``c_{i}`` times.
 
 For some empirical ``P_{it}`` with ``0≤P_{it}≤1``, we obtain ``C_{it}=P_{it}D_{it}`` clicks for ad ``i``, which pays us some number ``R_{i}>0`` up to a budget ``B_{i}``. The ad revenue for ad ``i`` is ``S_{i}=min⁡(R_{i}\sum_{t} C_{it},B_{i})``. We need to choose displays to maximize revenue, that is:
-`` \max \sum_{i} S_{i}``, subject to ``D \geq 0``, ``D^{T}\textbf{1}\leq T``, ``D\textbf{1}\geq c``.
+
+$$\begin{align}
+\text{maximize} & \sum_{i} S_{i}  \\
+\text{subject to } & D \geq 0, D^{T}\textbf{1}\leq T, D\textbf{1}\geq c.
+\end{align}$$
 
 """
 
 # ╔═╡ 0d58f4a8-3d45-4466-b552-cc08ef57facf
-md""" 1. Import libraries
+md""" #### 1. Import libraries
 """
 
 # ╔═╡ df9f53f4-ce9f-4f63-a285-f3ac906ddcfa
-md""" 2. Define variables """
+md""" #### 2. Define variables """
 
 # ╔═╡ 56d3ec77-a428-4e39-b4d3-8ef9f1af2e25
 begin
@@ -84,10 +88,10 @@ begin
 end
 
 # ╔═╡ 1cc0416b-2408-4194-aa7a-a5cad99ad227
-md""" 3. Define optimization problem """
+md""" #### 3. Define optimization problem """
 
 # ╔═╡ abdb988f-7392-4ea4-bb2f-72992aed704c
-md""" 4. Plot results """
+md""" #### 4. Plot results """
 
 # ╔═╡ c3bf8aee-8d84-4cee-815e-0f017e477fbd
 heatmap(evaluate(D), c = :matter, plot_title = "Optimal D")
@@ -97,6 +101,38 @@ evaluate(sum(D, dims = 2))
 
 # ╔═╡ feaf7188-bfcf-4154-bf6e-2cc7ff4af925
 heatmap(evaluate(P), c = :matter, plot_title = "P (prob) matrix")
+
+# ╔═╡ 83efcd1d-0530-4abc-8e55-391c26495739
+md""" #### 5. Example with *real* data """
+
+# ╔═╡ 8f694669-d597-4300-a476-e6ba58858c42
+begin
+	c1 = [61000, 80000, 61000, 23000, 64000]
+	R1 = [[0.15], [1.18], [0.57], [2.08], [2.43]]
+	B1 = [25000, 12000, 12000, 11000, 17000]
+end
+
+# ╔═╡ 4c384427-1cbe-48b5-ae03-bb29c7c3d0aa
+begin
+	# Form and solve the optimal advertising problem.	
+	D1 = Variable(m, n);
+	Si1 = [min(R1[i] * dot(P[i, :], D1[i, :]'), B1[i]) for i in 1:m];
+	problem1 =
+	    maximize(sum(Si1), [D1 >= 0, sum(D1, dims = 1)' <= T, sum(D1, dims = 2) >= c1]);
+	solve!(problem1, SCS.Optimizer; silent_solver = true)
+end
+
+# ╔═╡ 064e2acc-b101-4002-9490-35537cea63c8
+heatmap(evaluate(D1), c = :matter, plot_title = "Optimal D")
+
+# ╔═╡ 8e77bc96-0248-40e5-9dcd-f170a9f67447
+# Number of ads per advert
+evaluate(sum(D1, dims = 2))
+
+# ╔═╡ 05819ac5-9861-4349-a52b-5b7ecb0e67a2
+for i in 1:m
+	print(evaluate(Si1[i]), '\n')
+end
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -1344,5 +1380,11 @@ version = "1.4.1+0"
 # ╠═c3bf8aee-8d84-4cee-815e-0f017e477fbd
 # ╠═36da5862-dff0-4cdd-88ee-b2e38bd87791
 # ╠═feaf7188-bfcf-4154-bf6e-2cc7ff4af925
+# ╟─83efcd1d-0530-4abc-8e55-391c26495739
+# ╠═8f694669-d597-4300-a476-e6ba58858c42
+# ╠═4c384427-1cbe-48b5-ae03-bb29c7c3d0aa
+# ╠═064e2acc-b101-4002-9490-35537cea63c8
+# ╠═8e77bc96-0248-40e5-9dcd-f170a9f67447
+# ╠═05819ac5-9861-4349-a52b-5b7ecb0e67a2
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
